@@ -13,9 +13,17 @@ import (
 	"github.com/aldaircoronel/email-summary/internal/repository"
 )
 
-type TransactionController struct{}
+type TransactionController struct {
+	repo repository.Repository
+}
 
-func (c *TransactionController) ProcessCVSFile(filePath string) error {
+func NewTransactionController(repo repository.Repository) *TransactionController {
+	return &TransactionController{
+		repo: repo,
+	}
+}
+
+func (c *TransactionController) ProcessCSVFile(filePath string) error {
 	// Open the CSV file
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -28,6 +36,12 @@ func (c *TransactionController) ProcessCVSFile(filePath string) error {
 
 	// Set the delimiter to comma
 	reader.Comma = ','
+
+	// Skip the first row
+	_, err = reader.Read()
+	if err != nil {
+		return fmt.Errorf("failed to skip first row: %v", err)
+	}
 
 	// Loop through the remaining rows
 	for {
@@ -71,10 +85,11 @@ func (c *TransactionController) ProcessCVSFile(filePath string) error {
 		}
 
 		// Save the transaction to the database
-		err = repository.SaveTransaction(context.Background(), transaction)
+		err = c.repo.SaveTransaction(context.Background(), transaction)
 		if err != nil {
 			return fmt.Errorf("failed to save transaction: %v", err)
 		}
+
 	}
 
 	return nil
