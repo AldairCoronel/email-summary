@@ -10,19 +10,20 @@ CREATE TABLE transactions (
 DROP TABLE IF EXISTS month_summary;
 
 CREATE TABLE month_summary (
-    id SERIAL PRIMARY KEY,
-    year INTEGER,
-    month VARCHAR(10) NOT NULL,
-    numOfTransactions INTEGER NOT NULL,
-    averageCredit FLOAT NOT NULL,
-    averageDebit FLOAT NOT NULL
+    month VARCHAR(10) PRIMARY KEY,
+    year INTEGER NOT NULL,
+    num_of_transactions INTEGER NOT NULL,
+    average_credit FLOAT NOT NULL,
+    average_debit FLOAT NOT NULL,
+    summary_id  INTEGER NOT NULL,
+    FOREIGN KEY(summary_id) REFERENCES summary(id)
 );
 
 DROP TABLE IF EXISTS summary;
 
 CREATE TABLE summary (
     id SERIAL PRIMARY KEY,
-    totalBalance FLOAT NOT NULL,
-    numOfTotalTransactions INTEGER NOT NULL,
-    monthlySummaries JSONB NOT NULL
+    total_balance FLOAT NOT NULL,
+    num_of_total_transactions INTEGER NOT NULL,
+    monthly_summaries JSONB NOT NULL
 );
