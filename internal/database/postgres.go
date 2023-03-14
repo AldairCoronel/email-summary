@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/aldaircoronel/email-summary/internal/models"
+	_ "github.com/lib/pq"
 )
 
 // Define the PostgreSQL repository struct
@@ -15,8 +16,13 @@ type PostgresRepository struct {
 }
 
 // Create a new PostgreSQL repository instance
-func NewPostgresRepository(db *sql.DB) *PostgresRepository {
-	return &PostgresRepository{db: db}
+func NewPostgresRepository(connStr string) (*PostgresRepository, error) {
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %v", err)
+	}
+
+	return &PostgresRepository{db: db}, nil
 }
 
 // Implement the SaveTransaction method of the Repository interface
@@ -123,7 +129,7 @@ func (pr *PostgresRepository) SaveMonthSummary(ctx context.Context, ms *models.M
 }
 
 // Implement the GetMonthSummaryByID method of the Repository interface
-func (p *PostgresRepository) GetMonthSummaryByID(ctx context.Context, id string) (*models.MonthSummary, error) {
+func (p *PostgresRepository) GetMonthSummaryByID(ctx context.Context, id int) (*models.MonthSummary, error) {
 	monthSummary := &models.MonthSummary{}
 	query := `SELECT month, year, num_of_transactions, average_credit, average_debit, summary_id 
 	          FROM month_summary WHERE month = $1`
@@ -240,4 +246,9 @@ func (r *PostgresRepository) GetSummaryByID(ctx context.Context, id int) (*model
 	}
 
 	return summary, nil
+}
+
+// This function closes the database connection by calling the Close() function on the database object.
+func (r *PostgresRepository) Close() error {
+	return r.db.Close()
 }
