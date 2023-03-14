@@ -4,7 +4,7 @@ CREATE TABLE transactions (
     id INTEGER PRIMARY KEY,
     date TIMESTAMP NOT NULL,
     amount FLOAT NOT NULL,
-    is_credit BOOLEAN NOT NULL,
+    is_credit BOOLEAN NOT NULL
 );
 
 DROP TABLE IF EXISTS month_summary;
@@ -15,11 +15,10 @@ CREATE TABLE month_summary (
     num_of_transactions INTEGER NOT NULL,
     average_credit FLOAT NOT NULL,
     average_debit FLOAT NOT NULL,
-    summary_id  INTEGER NOT NULL,
-    FOREIGN KEY(summary_id) REFERENCES summary(id)
+    summary_id  INTEGER NOT NULL REFERENCES summary(id)
 );
 
-DROP TABLE IF EXISTS summary;
+DROP TABLE IF EXISTS summary CASCADE;
 
 CREATE TABLE summary (
     id SERIAL PRIMARY KEY,
