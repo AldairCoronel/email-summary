@@ -7,22 +7,27 @@ CREATE TABLE transactions (
     is_credit BOOLEAN NOT NULL
 );
 
-DROP TABLE IF EXISTS month_summary;
-
-CREATE TABLE month_summary (
-    month VARCHAR(10) PRIMARY KEY,
-    year INTEGER NOT NULL,
-    num_of_transactions INTEGER NOT NULL,
-    average_credit FLOAT NOT NULL,
-    average_debit FLOAT NOT NULL,
-    summary_id  INTEGER NOT NULL REFERENCES summary(id)
-);
-
-DROP TABLE IF EXISTS summary CASCADE;
+DROP TABLE IF EXISTS summary;
 
 CREATE TABLE summary (
     id SERIAL PRIMARY KEY,
     total_balance FLOAT NOT NULL,
-    num_of_total_transactions INTEGER NOT NULL,
-    monthly_summaries JSONB NOT NULL
+    num_of_credit_tansactions INTEGER NOT NULL,
+    num_of_debit_tansactions INTEGER NOT NULL,
+    total_average_credit FLOAT NOT NULL,
+    total_average_debit FLOAT NOT NULL,
+);
+
+
+DROP TABLE IF EXISTS month_summary;
+
+CREATE TABLE month_summary (
+    id SERIAL PRIMARY KEY,
+    month VARCHAR(10) NOT NULL,
+    num_of_credit_tansactions INTEGER NOT NULL,
+    num_of_debit_tansactions INTEGER NOT NULL,
+    average_credit FLOAT NOT NULL,
+    average_debit FLOAT NOT NULL,
+    summary_id SERIAL NOT NULL,
+    FOREIGN KEY (summary_id) REFERENCES summary(id)
 );
