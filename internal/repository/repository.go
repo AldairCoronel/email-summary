@@ -14,14 +14,15 @@ type Repository interface {
 	GetTransactionByID(ctx context.Context, id int) (*models.Transaction, error)
 	ListTransactions(ctx context.Context) ([]*models.Transaction, error)
 
-	// MonthSummaryRepository methods
-	SaveMonthSummary(ctx context.Context, ms *models.MonthSummary) error
-	GetMonthSummaryByID(ctx context.Context, id int) (*models.MonthSummary, error)
-	ListMonthSummaries(ctx context.Context) ([]*models.MonthSummary, error)
-
 	// SummaryRepository methods
 	SaveSummary(ctx context.Context, s *models.Summary) error
 	GetSummaryByID(ctx context.Context, id int) (*models.Summary, error)
+
+	// MonthSummaryRepository methods
+	SaveMonthSummary(ctx context.Context, ms *models.MonthSummary, summaryID int) error
+	GetMonthSummaryByID(ctx context.Context, id int) (*models.MonthSummary, error)
+	GetMonthSummaryBySummaryID(ctx context.Context, summaryID int) ([]*models.MonthSummary, error)
+	ListMonthSummaries(ctx context.Context) ([]*models.MonthSummary, error)
 
 	Close() error
 }
@@ -29,49 +30,54 @@ type Repository interface {
 // Define the repository struct
 var implementation Repository
 
-// Create a new repository instance
+// SetRepository sets the global repository implementation
 func SetRepository(repository Repository) {
 	implementation = repository
 }
 
-// Implement the SaveTransaction method of the Repository interface
+// SaveTransaction saves the given transaction
 func SaveTransaction(ctx context.Context, transaction *models.Transaction) error {
 	return implementation.SaveTransaction(ctx, transaction)
 }
 
-// Implement the GetTransactionByID method of the Repository interface
+// GetTransactionByID retrieves the transaction with the given ID
 func GetTransactionByID(ctx context.Context, id int) (*models.Transaction, error) {
 	return implementation.GetTransactionByID(ctx, id)
 }
 
-// Implement the ListTransactions method of the Repository interface
+// ListTransactions retrieves a list of all transactions
 func ListTransactions(ctx context.Context) ([]*models.Transaction, error) {
 	return implementation.ListTransactions(ctx)
 }
 
-// Implement the SaveMonthSummary method of the Repository interface
-func SaveMonthSummary(ctx context.Context, ms *models.MonthSummary) error {
-	return implementation.SaveMonthSummary(ctx, ms)
+// SaveSummary saves the given summary
+func SaveSummary(ctx context.Context, s *models.Summary) error {
+	return implementation.SaveSummary(ctx, s)
 }
 
-// Implement the GetMonthSummaryByID method of the Repository interface
+// GetSummaryByID retrieves the summary with the given ID
+func GetSummaryByID(ctx context.Context, id int) (*models.Summary, error) {
+	return implementation.GetSummaryByID(ctx, id)
+}
+
+// SaveMonthSummary saves the given month summary for the given summary ID
+func SaveMonthSummary(ctx context.Context, ms *models.MonthSummary, summaryID int) error {
+	return implementation.SaveMonthSummary(ctx, ms, summaryID)
+}
+
+// GetMonthSummaryByID retrieves the month summary with the given ID
 func GetMonthSummaryByID(ctx context.Context, id int) (*models.MonthSummary, error) {
 	return implementation.GetMonthSummaryByID(ctx, id)
+}
+
+// GetMonthSummaryBySummaryID retrieves a list of month summaries for the given summary ID
+func GetMonthSummaryBySummaryID(ctx context.Context, summaryID int) ([]*models.MonthSummary, error) {
+	return implementation.GetMonthSummaryBySummaryID(ctx, summaryID)
 }
 
 // Implement the ListMonthSummaries method of the Repository interface
 func ListMonthSummaries(ctx context.Context) ([]*models.MonthSummary, error) {
 	return implementation.ListMonthSummaries(ctx)
-}
-
-// Implement the SaveSummary method of the Repository interface
-func SaveSummary(ctx context.Context, s *models.Summary) error {
-	return implementation.SaveSummary(ctx, s)
-}
-
-// Implement the GetSummaryByID method of the Repository interface
-func GetSummaryByID(ctx context.Context, id int) (*models.Summary, error) {
-	return implementation.GetSummaryByID(ctx, id)
 }
 
 // Implement the Close method of the Repository interface
