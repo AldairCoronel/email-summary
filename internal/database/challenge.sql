@@ -1,3 +1,4 @@
+-- create the transactions table
 DROP TABLE IF EXISTS transactions;
 
 CREATE TABLE transactions (
@@ -7,7 +8,8 @@ CREATE TABLE transactions (
     is_credit BOOLEAN NOT NULL
 );
 
-DROP TABLE IF EXISTS summary;
+-- create the summary table
+DROP TABLE IF EXISTS summary CASCADE;
 
 CREATE TABLE summary (
     id SERIAL PRIMARY KEY,
@@ -15,10 +17,11 @@ CREATE TABLE summary (
     num_of_credit_tansactions INTEGER NOT NULL,
     num_of_debit_tansactions INTEGER NOT NULL,
     total_average_credit FLOAT NOT NULL,
-    total_average_debit FLOAT NOT NULL,
+    total_average_debit FLOAT NOT NULL
 );
 
 
+-- create the month_summary table
 DROP TABLE IF EXISTS month_summary;
 
 CREATE TABLE month_summary (
