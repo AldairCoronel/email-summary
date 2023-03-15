@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"path/filepath"
 
@@ -13,7 +14,7 @@ func main() {
 	csvFilePath, _ := filepath.Abs("./sample/txns.csv")
 
 	// Initialize the database connection
-	connStr := "postgres://aldair:hola@localhost:5432/challenge?sslmode=disable"
+	connStr := "postgres://postgres:hola@localhost:5432/challenge?sslmode=disable"
 
 	db, err := database.NewPostgresRepository(connStr)
 	if err != nil {
@@ -27,16 +28,14 @@ func main() {
 	ctrl := controller.NewTransactionController(db)
 
 	// Process the CSV file and save transactions to the database
-	if err := ctrl.ProcessCSVFile(csvFilePath); err != nil {
+	if err := ctrl.ProcessCSVFile(context.Background(), csvFilePath); err != nil {
 		log.Fatal(err)
 	}
 
-	// // Generate the email summary
-	// summary, err := ctrl.GenerateEmailSummary()
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-
+	// Generate the email summary
+	if err := ctrl.GenerateEmailSummary(context.Background()); err != nil {
+		log.Fatal(err)
+	}
 	// // Send the email summary
 	// if err := view.SendEmail(summary); err != nil {
 	// 	log.Fatal(err)
