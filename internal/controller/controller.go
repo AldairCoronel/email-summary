@@ -13,11 +13,13 @@ import (
 	"github.com/aldaircoronel/email-summary/internal/repository"
 )
 
+// TransactionController defines a controller for handling transactions.
 type TransactionController struct {
 	repo      repository.Repository
 	accountID int
 }
 
+// NewTransactionController creates a new instance of TransactionController.
 func NewTransactionController(repo repository.Repository) *TransactionController {
 	return &TransactionController{
 		repo: repo,
@@ -38,6 +40,7 @@ func (c *TransactionController) SetAccountID(accountID int) {
 	c.accountID = accountID
 }
 
+// ProcessCSVFile reads a CSV file from the given file path and inserts its contents into the database
 func (c *TransactionController) ProcessCSVFile(ctx context.Context, filePath string) error {
 	// Open the CSV file
 	file, err := os.Open(filePath)
@@ -110,6 +113,9 @@ func (c *TransactionController) ProcessCSVFile(ctx context.Context, filePath str
 	return nil
 }
 
+/*
+This function takes a slice of *models.Transaction and returns a pointer to models.Summary and an error. It computes summary statistics for all transactions in the slice, including total balance, total transactions, number of credit and debit transactions, and average credit and debit amounts. If successful, it returns a pointer to the computed models.Summary and a nil error. If there was an error, it returns a nil pointer and an error.
+*/
 func computeSummary(transactions []*models.Transaction) (*models.Summary, error) {
 	var totalBalance, totalCredit, totalDebit float64
 	var totalTransactions, numCreditTransactions, numDebitTransactions int
@@ -150,6 +156,9 @@ func computeSummary(transactions []*models.Transaction) (*models.Summary, error)
 	return summary, nil
 }
 
+/*
+This function takes a slice of *models.Transaction and returns a slice of *models.MonthSummary and an error. It computes summary statistics for each month in the transactions, including total balance, total transactions, number of credit and debit transactions, and average credit and debit amounts. If successful, it returns a slice of pointers to the computed models.MonthSummary structs and a nil error. If there was an error, it returns a nil slice and an error.
+*/
 func computeMonthSummaries(transactions []*models.Transaction) ([]*models.MonthSummary, error) {
 	// Create a map to hold the month summaries
 	monthSummaries := make(map[string]*models.MonthSummary)
@@ -198,6 +207,9 @@ func computeMonthSummaries(transactions []*models.Transaction) ([]*models.MonthS
 	return result, nil
 }
 
+/*
+GenerateEmailSummary is a method of TransactionController that takes a context and returns a pointer to models.Summary, a slice of pointers to models.MonthSummary, and an error. It first retrieves all transactions for the account ID associated with the TransactionController instance from the repository, then computes summary statistics and month-wise summary statistics using helper functions computeSummary and computeMonthSummaries, respectively. It saves the computed summary and month summaries to the repository and returns them along with a nil error. If there was an error retrieving or computing the summary or saving the summary to the repository, it returns nil pointers and an error.
+*/
 func (tc *TransactionController) GenerateEmailSummary(ctx context.Context) (*models.Summary, []*models.MonthSummary, error) {
 	// Get the account ID from the controller
 	accountID := tc.accountID
