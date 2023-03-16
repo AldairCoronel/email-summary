@@ -185,37 +185,37 @@ func computeMonthSummaries(transactions []*models.Transaction) ([]*models.MonthS
 	return monthSummaries, nil
 }
 
-func (tc *TransactionController) GenerateEmailSummary(ctx context.Context) error {
+func (tc *TransactionController) GenerateEmailSummary(ctx context.Context) (*models.Summary, []*models.MonthSummary, error) {
 	// Get all transactions from the repository
 	transactions, err := tc.repo.ListTransactions(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to list transactions: %v", err)
+		return nil, nil, fmt.Errorf("failed to list transactions: %v", err)
 	}
 
 	// Compute the summary statistics for all transactions
 	summary, err := computeSummary(transactions)
 	if err != nil {
-		return fmt.Errorf("failed to compute summary: %v", err)
+		return nil, nil, fmt.Errorf("failed to compute summary: %v", err)
 	}
 
 	// Save the summary to the repository
 	if err := tc.repo.SaveSummary(ctx, summary); err != nil {
-		return fmt.Errorf("failed to save summary: %v", err)
+		return nil, nil, fmt.Errorf("failed to save summary: %v", err)
 	}
 
 	// Compute the month summary statistics for each month
 	monthSummaries, err := computeMonthSummaries(transactions)
 	if err != nil {
-		return fmt.Errorf("failed to compute month summaries: %v", err)
+		return nil, nil, fmt.Errorf("failed to compute month summaries: %v", err)
 	}
 
 	// Save the month summaries to the repository
 	summaryID := summary.Id
 	for _, monthSummary := range monthSummaries {
 		if err := tc.repo.SaveMonthSummary(ctx, monthSummary, summaryID); err != nil {
-			return fmt.Errorf("failed to save month summary: %v", err)
+			return nil, nil, fmt.Errorf("failed to save month summary: %v", err)
 		}
 	}
 
-	return nil
+	return summary, monthSummaries, nil
 }
