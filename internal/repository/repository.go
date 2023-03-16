@@ -15,17 +15,16 @@ type Repository interface {
 
 	// TransactionRepository methods
 	SaveTransaction(ctx context.Context, trx *models.Transaction) error
-	GetTransactionByID(ctx context.Context, id int) (*models.Transaction, error)
+	GetTransactionByAccountID(ctx context.Context, accountID int) ([]*models.Transaction, error)
 	ListTransactions(ctx context.Context) ([]*models.Transaction, error)
 
 	// SummaryRepository methods
 	SaveSummary(ctx context.Context, s *models.Summary) error
-	GetSummaryByID(ctx context.Context, id int) (*models.Summary, error)
+	GetSummaryByAccountID(ctx context.Context, accountID int) (*models.Summary, error)
 	ListSummaries(ctx context.Context) ([]*models.Summary, error)
 
 	// MonthSummaryRepository methods
 	SaveMonthSummary(ctx context.Context, ms *models.MonthSummary, summaryID int) error
-	GetMonthSummaryByID(ctx context.Context, id int) (*models.MonthSummary, error)
 	GetMonthSummaryBySummaryID(ctx context.Context, summaryID int) ([]*models.MonthSummary, error)
 	ListMonthSummaries(ctx context.Context) ([]*models.MonthSummary, error)
 
@@ -55,9 +54,9 @@ func SaveTransaction(ctx context.Context, transaction *models.Transaction) error
 	return implementation.SaveTransaction(ctx, transaction)
 }
 
-// GetTransactionByID retrieves the transaction with the given ID
-func GetTransactionByID(ctx context.Context, id int) (*models.Transaction, error) {
-	return implementation.GetTransactionByID(ctx, id)
+// GetTransactionByAccountID retrieves the transaction with the given AccountID
+func GetTransactionByAccountID(ctx context.Context, accountID int) ([]*models.Transaction, error) {
+	return implementation.GetTransactionByAccountID(ctx, accountID)
 }
 
 // ListTransactions retrieves a list of all transactions
@@ -70,19 +69,14 @@ func SaveSummary(ctx context.Context, s *models.Summary) error {
 	return implementation.SaveSummary(ctx, s)
 }
 
-// GetSummaryByID retrieves the summary with the given ID
-func GetSummaryByID(ctx context.Context, id int) (*models.Summary, error) {
-	return implementation.GetSummaryByID(ctx, id)
+// GetSummaryByAccountID retrieves the summary with the given ID
+func GetSummaryByAccountID(ctx context.Context, accountID int) (*models.Summary, error) {
+	return implementation.GetSummaryByAccountID(ctx, accountID)
 }
 
 // SaveMonthSummary saves the given month summary for the given summary ID
 func SaveMonthSummary(ctx context.Context, ms *models.MonthSummary, summaryID int) error {
 	return implementation.SaveMonthSummary(ctx, ms, summaryID)
-}
-
-// GetMonthSummaryByID retrieves the month summary with the given ID
-func GetMonthSummaryByID(ctx context.Context, id int) (*models.MonthSummary, error) {
-	return implementation.GetMonthSummaryByID(ctx, id)
 }
 
 // GetMonthSummaryBySummaryID retrieves a list of month summaries for the given summary ID
