@@ -234,7 +234,7 @@ func (pr *PostgresRepository) SaveMonthSummary(ctx context.Context, ms *models.M
 }
 
 // GetMonthSummaryBySummaryID returns a month summary by summary id
-func (pr *PostgresRepository) GetMonthSummaryBySummaryID(ctx context.Context, summaryID int64) ([]*models.MonthSummary, error) {
+func (pr *PostgresRepository) GetMonthSummaryBySummaryID(ctx context.Context, summaryID int) ([]*models.MonthSummary, error) {
 	query := `
 		SELECT 
 			month_summary_id, 
