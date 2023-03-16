@@ -1,6 +1,14 @@
 package view
 
-import "net/smtp"
+import (
+	"bytes"
+	"log"
+	"net/smtp"
+	"strings"
+	"text/template"
+
+	"github.com/aldaircoronel/email-summary/internal/models"
+)
 
 // Interface that represents an email service.
 type EmailService interface {
@@ -33,4 +41,39 @@ func NewSMTPService(cfg *SMTPConfig) *SMTPService {
 		auth:     auth,
 		from:     cfg.From,
 	}
+}
+
+func RenderEmailBody(summary *models.Summary, monthSummaries []*models.MonthSummary) string {
+	var body bytes.Buffer
+	tmpl, err := template.ParseFiles("internal/view/email-template.html")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := tmpl.Execute(&body, struct {
+		Summary        *models.Summary
+		MonthSummaries []*models.MonthSummary
+	}{
+		Summary:        summary,
+		MonthSummaries: monthSummaries,
+	}); err != nil {
+		log.Fatal(err)
+	}
+
+	return body.String()
+}
+
+// SendEmail sends an email through SMTP
+func (s *SMTPService) SendEmail(to []string, subject string, body string) error {
+	msg := []byte("To: " + strings.Join(to, ",") + "\r\n" +
+		"Subject: " + subject + "\r\n" +
+		"MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n" +
+		body + "\r\n")
+
+	addr := s.smtpHost + ":" + s.smtpPort
+	if err := smtp.SendMail(addr, s.auth, s.from, to, msg); err != nil {
+		return err
+	}
+
+	return nil
 }
