@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Transaction Summary</title>
+	<style>
+		table {
+			border-collapse: collapse;
+			margin: 20px;
+		}
+
+		th, td {
+			padding: 8px;
+			text-align: left;
+			border-bottom: 1px solid #ddd;
+		}
+
+		h1 {
+			margin-top: 0px;
+			margin-bottom: 20px;
+			font-size: 24px;
+		}
+
+		.summary-table {
+			width: 80%;
+			margin: 20px auto;
+		}
+
+		.month-summary-table {
+			width: 100%;
+			margin-bottom: 40px;
+		}
+	</style>
+</head>
+<body>
+	<h1>Transaction Summary</h1>
+
+	<table class="summary-table">
+		<thead>
+			<tr>
+				<th colspan="2">Summary</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>Total balance</td>
+				<td>{{printf "$%.2f" .Summary.TotalBalance}}</td>
+			</tr>
+			<tr>
+				<td>Total average debit amount</td>
+				<td>{{printf "$%.2f" .Summary.TotalAverageDebit}}</td>
+			</tr>
+			<tr>
+				<td>Total average credit amount</td>
+				<td>{{printf "$%.2f" .Summary.TotalAverageCredit}}</td>
+			</tr>
+			<tr>
+				<td>Total number of transactions</td>
+			</tr>
+		</tbody>
+	</table>
+
+	{{range .MonthSummaries}}
+		<table class="month-summary-table">
+			<thead>
+				<tr>
+					<th colspan="2">{{.Month}}</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Number of credit transactions</td>
+					<td>{{.NumOfCreditTansactions}}</td>
+				</tr>
+				<tr>
+					<td>Number of debit transactions</td>
+					<td>{{.NumOfDebitTansactions}}</td>
+				</tr>
+				<tr>
+					<td>Average credit amount</td>
+					<td>{{printf "$%.2f" .AverageCredit}}</td>
+				</tr>
+				<tr>
+					<td>Average debit amount</td>
+					<td>{{printf "$%.2f" .AverageDebit}}</td>
+				</tr>
+				<tr>
+					<td>Total number of transactions</td>
+				</tr>
+			</tbody>
+		</table>
+	{{end}}
+</body>
+</html>
