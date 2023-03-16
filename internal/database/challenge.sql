@@ -14,7 +14,7 @@ CREATE TABLE transactions (
     id INTEGER NOT NULL,
     date TIMESTAMP NOT NULL,
     amount FLOAT NOT NULL,
-    is_credit BOOLEAN NOT NULL,
+    is_credit BOOLEAN NOT NULL,G
     FOREIGN KEY (account_id) REFERENCES accounts(account_id)
 );
 
@@ -40,6 +40,7 @@ DROP TABLE IF EXISTS month_summary;
 CREATE TABLE month_summary (
     id SERIAL PRIMARY KEY,
     month VARCHAR(10) NOT NULL,
+    total_balance FLOAT NOT NULL,
     total_transactions INTEGER NOT NULL,
     num_of_credit_transactions INTEGER NOT NULL,
     num_of_debit_transactions INTEGER NOT NULL,
