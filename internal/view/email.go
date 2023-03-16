@@ -2,10 +2,10 @@ package view
 
 import (
 	"bytes"
-	"log"
+	"fmt"
+	"html/template"
 	"net/smtp"
 	"strings"
-	"text/template"
 
 	"github.com/aldaircoronel/email-summary/internal/models"
 )
@@ -43,13 +43,13 @@ func NewSMTPService(cfg *SMTPConfig) *SMTPService {
 	}
 }
 
-func RenderEmailBody(summary *models.Summary, monthSummaries []*models.MonthSummary) string {
-	var body bytes.Buffer
+func RenderEmailBody(summary *models.Summary, monthSummaries []*models.MonthSummary) (string, error) {
 	tmpl, err := template.ParseFiles("internal/view/email-template.html")
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("failed to parse email template: %v", err)
 	}
 
+	var body bytes.Buffer
 	if err := tmpl.Execute(&body, struct {
 		Summary        *models.Summary
 		MonthSummaries []*models.MonthSummary
@@ -57,10 +57,10 @@ func RenderEmailBody(summary *models.Summary, monthSummaries []*models.MonthSumm
 		Summary:        summary,
 		MonthSummaries: monthSummaries,
 	}); err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("failed to execute email template: %v", err)
 	}
 
-	return body.String()
+	return body.String(), nil
 }
 
 // SendEmail sends an email through SMTP
@@ -72,7 +72,7 @@ func (s *SMTPService) SendEmail(to []string, subject string, body string) error 
 
 	addr := s.smtpHost + ":" + s.smtpPort
 	if err := smtp.SendMail(addr, s.auth, s.from, to, msg); err != nil {
-		return err
+		return fmt.Errorf("failed to send email: %v", err)
 	}
 
 	return nil
