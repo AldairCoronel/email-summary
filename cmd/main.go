@@ -14,6 +14,7 @@ import (
 )
 
 func main() {
+	// Get the file path of the input csv files.
 	csvFilePath, _ := filepath.Abs("./sample/txns.csv")
 
 	err := godotenv.Load()
@@ -24,6 +25,7 @@ func main() {
 	// Load database connection string from environment variable
 	connStr := os.Getenv("DATABASE_URL")
 
+	// Instanciate a new PostgreSQL repository
 	db, err := database.NewPostgresRepository(connStr)
 	if err != nil {
 		log.Fatal(err)
