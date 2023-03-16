@@ -35,6 +35,16 @@ func main() {
 	// Initialize the controller with the database as the repository
 	ctrl := controller.NewTransactionController(db)
 
+	// Create a new account
+	accountID, err := ctrl.CreateAccount(context.Background())
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("New account created with ID: %d", accountID)
+
+	// Store the account ID somewhere in the controller because we will need it later
+	ctrl.SetAccountID(accountID)
+
 	// Process the CSV file and save transactions to the database
 	if err := ctrl.ProcessCSVFile(context.Background(), csvFilePath); err != nil {
 		log.Fatal(err)
@@ -58,13 +68,21 @@ func main() {
 	emailService := view.NewSMTPService(emailCfg)
 
 	// Send email summary
-	to := []string{os.Getenv("EMAIL_TO")}
+	emailTo := os.Getenv("EMAIL_TO")
+	if emailTo == "" {
+		log.Fatal("EMAIL_TO environment variable is not set")
+	}
+	to := []string{emailTo}
 	subject := "Transaction Summary"
-	body := view.RenderEmailBody(summary, monthSummaries)
+	body, err := view.RenderEmailBody(summary, monthSummaries)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if err := emailService.SendEmail(to, subject, body); err != nil {
 		log.Fatal(err)
 	}
 
 	// Print message when email is successfully sent
 	log.Println("Email summary sent!")
+
 }
