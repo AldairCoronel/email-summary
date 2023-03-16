@@ -116,14 +116,14 @@ func computeSummary(transactions []*models.Transaction) (*models.Summary, error)
 
 	for _, transaction := range transactions {
 		if transaction.IsCredit {
+			totalBalance += transaction.Amount
 			totalCredit += transaction.Amount
 			numCreditTransactions++
 		} else {
+			totalBalance -= transaction.Amount
 			totalDebit += transaction.Amount
 			numDebitTransactions++
 		}
-
-		totalBalance += transaction.Amount
 		totalTransactions++
 	}
 
@@ -169,11 +169,12 @@ func computeMonthSummaries(transactions []*models.Transaction) ([]*models.MonthS
 		// Add the transaction to the appropriate month summary
 		monthSummary := monthSummaries[month]
 		monthSummary.TotalTransactions++
-		monthSummary.TotalBalance += transaction.Amount
 		if transaction.IsCredit {
+			monthSummary.TotalBalance += transaction.Amount
 			monthSummary.NumOfCreditTransactions++
 			monthSummary.AverageCredit += transaction.Amount
 		} else {
+			monthSummary.TotalBalance -= transaction.Amount
 			monthSummary.NumOfDebitTransactions++
 			monthSummary.AverageDebit += transaction.Amount
 		}
