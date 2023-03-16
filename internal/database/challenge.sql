@@ -1,11 +1,21 @@
+-- create the accounts table
+DROP TABLE IF EXISTS accounts;
+
+CREATE TABLE accounts (
+    account_id SERIAL PRIMARY KEY
+);
+
 -- create the transactions table
 DROP TABLE IF EXISTS transactions;
 
 CREATE TABLE transactions (
-    id INTEGER PRIMARY KEY,
+    transaction_id SERIAL PRIMARY KEY,
+    account_id SERIAL NOT NULL,
+    id INTEGER NOT NULL,
     date TIMESTAMP NOT NULL,
     amount FLOAT NOT NULL,
-    is_credit BOOLEAN NOT NULL
+    is_credit BOOLEAN NOT NULL,
+    FOREIGN KEY (account_id) REFERENCES accounts(account_id)
 );
 
 -- create the summary table
@@ -14,10 +24,13 @@ DROP TABLE IF EXISTS summary CASCADE;
 CREATE TABLE summary (
     id SERIAL PRIMARY KEY,
     total_balance FLOAT NOT NULL,
-    num_of_credit_tansactions INTEGER NOT NULL,
-    num_of_debit_tansactions INTEGER NOT NULL,
+    total_transactions INTEGER NOT NULL,
+    num_of_credit_transactions INTEGER NOT NULL,
+    num_of_debit_transactions INTEGER NOT NULL,
     total_average_credit FLOAT NOT NULL,
-    total_average_debit FLOAT NOT NULL
+    total_average_debit FLOAT NOT NULL,
+    transaction_id INTEGER NOT NULL,
+    FOREIGN KEY (transaction_id) REFERENCES transactions(transaction_id)
 );
 
 
@@ -27,8 +40,9 @@ DROP TABLE IF EXISTS month_summary;
 CREATE TABLE month_summary (
     id SERIAL PRIMARY KEY,
     month VARCHAR(10) NOT NULL,
-    num_of_credit_tansactions INTEGER NOT NULL,
-    num_of_debit_tansactions INTEGER NOT NULL,
+    total_transactions INTEGER NOT NULL,
+    num_of_credit_transactions INTEGER NOT NULL,
+    num_of_debit_transactions INTEGER NOT NULL,
     average_credit FLOAT NOT NULL,
     average_debit FLOAT NOT NULL,
     summary_id SERIAL NOT NULL,
