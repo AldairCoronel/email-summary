@@ -25,13 +25,21 @@ func NewPostgresRepository(connStr string) (*PostgresRepository, error) {
 }
 
 // Implement the SaveAccount method of the Repository interface
-func (pr *PostgresRepository) SaveAccount(ctx context.Context, a *models.Account) error {
-	query := `INSERT INTO accounts DEFAULT VALUES RETURNING account_id`
-	err := pr.db.QueryRowContext(ctx, query).Scan(&a.AccountID)
+func (pr *PostgresRepository) SaveAccount(ctx context.Context) (int, error) {
+	// Construct the SQL query
+	query := `
+		INSERT INTO accounts DEFAULT VALUES
+		RETURNING account_id
+	`
+
+	// Execute the query and retrieve the new account_id
+	var accountID int
+	err := pr.db.QueryRowContext(ctx, query).Scan(&accountID)
 	if err != nil {
-		return fmt.Errorf("failed to save account: %v", err)
+		return 0, err
 	}
-	return nil
+
+	return accountID, nil
 }
 
 // GetAccountByID retrieves the account with the given ID
