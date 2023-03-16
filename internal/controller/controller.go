@@ -14,13 +14,28 @@ import (
 )
 
 type TransactionController struct {
-	repo repository.Repository
+	repo      repository.Repository
+	accountID int
 }
 
 func NewTransactionController(repo repository.Repository) *TransactionController {
 	return &TransactionController{
 		repo: repo,
 	}
+}
+
+// CreateAccount creates a new account and returns its ID
+func (c *TransactionController) CreateAccount(ctx context.Context) (int, error) {
+	accountID, err := c.repo.SaveAccount(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("error creating account: %v", err)
+	}
+	return accountID, nil
+}
+
+// SetAccountID stores the account ID in the controller
+func (c *TransactionController) SetAccountID(accountID int) {
+	c.accountID = accountID
 }
 
 func (c *TransactionController) ProcessCSVFile(ctx context.Context, filePath string) error {
@@ -78,10 +93,11 @@ func (c *TransactionController) ProcessCSVFile(ctx context.Context, filePath str
 
 		// Create a new transaction object
 		transaction := &models.Transaction{
-			Id:       id,
-			Date:     date,
-			Amount:   amount,
-			IsCredit: isCredit,
+			ID:        id,
+			Date:      date,
+			Amount:    amount,
+			IsCredit:  isCredit,
+			AccountID: c.accountID,
 		}
 
 		// Save the transaction to the database
@@ -89,107 +105,106 @@ func (c *TransactionController) ProcessCSVFile(ctx context.Context, filePath str
 		if err != nil {
 			return fmt.Errorf("failed to save transaction: %v", err)
 		}
-
 	}
 
 	return nil
 }
 
 func computeSummary(transactions []*models.Transaction) (*models.Summary, error) {
-	// Initialize variables to calculate summary
 	var totalBalance, totalCredit, totalDebit float64
-	var numOfCreditTransactions, numOfDebitTransactions int
+	var totalTransactions, numCreditTransactions, numDebitTransactions int
 
-	// Calculate summary values
-	for _, trx := range transactions {
-		totalBalance += trx.Amount
-		if trx.IsCredit {
-			totalCredit += trx.Amount
-			numOfCreditTransactions++
+	for _, transaction := range transactions {
+		if transaction.IsCredit {
+			totalCredit += transaction.Amount
+			numCreditTransactions++
 		} else {
-			totalDebit += trx.Amount
-			numOfDebitTransactions++
+			totalDebit += transaction.Amount
+			numDebitTransactions++
 		}
+
+		totalBalance += transaction.Amount
+		totalTransactions++
 	}
 
-	// Calculate averages
-	var avgCredit, avgDebit float64
-	if numOfCreditTransactions > 0 {
-		avgCredit = totalCredit / float64(numOfCreditTransactions)
-	}
-	if numOfDebitTransactions > 0 {
-		avgDebit = totalDebit / float64(numOfDebitTransactions)
+	totalAverageCredit := 0.0
+	if numCreditTransactions > 0 {
+		totalAverageCredit = totalCredit / float64(numCreditTransactions)
 	}
 
-	// Create summary object
+	totalAverageDebit := 0.0
+	if numDebitTransactions > 0 {
+		totalAverageDebit = totalDebit / float64(numDebitTransactions)
+	}
+
 	summary := &models.Summary{
-		TotalBalance:           totalBalance,
-		NumOfCreditTansactions: numOfCreditTransactions,
-		NumOfDebitTansactions:  numOfDebitTransactions,
-		TotalAverageCredit:     avgCredit,
-		TotalAverageDebit:      avgDebit,
+		AccountID:               transactions[0].AccountID,
+		TotalBalance:            totalBalance,
+		TotalTransactions:       totalTransactions,
+		NumOfCreditTransactions: numCreditTransactions,
+		NumOfDebitTransactions:  numDebitTransactions,
+		TotalAverageCredit:      totalAverageCredit,
+		TotalAverageDebit:       totalAverageDebit,
 	}
 
 	return summary, nil
 }
 
 func computeMonthSummaries(transactions []*models.Transaction) ([]*models.MonthSummary, error) {
-	// Create a map to group transactions by month
-	transactionsByMonth := make(map[string][]*models.Transaction)
+	// Create a map to hold the month summaries
+	monthSummaries := make(map[string]*models.MonthSummary)
 
-	for _, trx := range transactions {
-		month := trx.Date.Format("2006-01")
-		transactionsByMonth[month] = append(transactionsByMonth[month], trx)
-	}
+	// Iterate over the transactions and add them to the month summaries
+	for _, transaction := range transactions {
+		month := transaction.Date.Month().String() // Get the month name
 
-	// Compute month summaries
-	monthSummaries := make([]*models.MonthSummary, 0)
-	for month, monthTransactions := range transactionsByMonth {
-		numOfCreditTransactions := 0
-		numOfDebitTransactions := 0
-		totalCredit := 0.0
-		totalDebit := 0.0
-
-		for _, trx := range monthTransactions {
-			if trx.IsCredit {
-				numOfCreditTransactions++
-				totalCredit += trx.Amount
-			} else {
-				numOfDebitTransactions++
-				totalDebit += trx.Amount
+		// Check if a month summary already exists for this month
+		if _, ok := monthSummaries[month]; !ok {
+			// Create a new month summary if one doesn't exist
+			monthSummaries[month] = &models.MonthSummary{
+				Month: month,
 			}
 		}
 
-		averageCredit := 0.0
-		averageDebit := 0.0
-
-		if numOfCreditTransactions > 0 {
-			averageCredit = totalCredit / float64(numOfCreditTransactions)
+		// Add the transaction to the appropriate month summary
+		monthSummary := monthSummaries[month]
+		monthSummary.TotalTransactions++
+		monthSummary.TotalBalance += transaction.Amount
+		if transaction.IsCredit {
+			monthSummary.NumOfCreditTransactions++
+			monthSummary.AverageCredit += transaction.Amount
+		} else {
+			monthSummary.NumOfDebitTransactions++
+			monthSummary.AverageDebit += transaction.Amount
 		}
-
-		if numOfDebitTransactions > 0 {
-			averageDebit = totalDebit / float64(numOfDebitTransactions)
-		}
-
-		monthSummary := &models.MonthSummary{
-			Month:                  month,
-			NumOfCreditTansactions: numOfCreditTransactions,
-			NumOfDebitTansactions:  numOfDebitTransactions,
-			AverageCredit:          averageCredit,
-			AverageDebit:           averageDebit,
-		}
-
-		monthSummaries = append(monthSummaries, monthSummary)
 	}
 
-	return monthSummaries, nil
+	// Calculate the averages for each month summary
+	for _, monthSummary := range monthSummaries {
+		if monthSummary.NumOfCreditTransactions > 0 {
+			monthSummary.AverageCredit /= float64(monthSummary.NumOfCreditTransactions)
+		}
+		if monthSummary.NumOfDebitTransactions > 0 {
+			monthSummary.AverageDebit /= float64(monthSummary.NumOfDebitTransactions)
+		}
+	}
+
+	// Convert the map to a slice of month summaries and return it
+	result := make([]*models.MonthSummary, 0, len(monthSummaries))
+	for _, monthSummary := range monthSummaries {
+		result = append(result, monthSummary)
+	}
+	return result, nil
 }
 
 func (tc *TransactionController) GenerateEmailSummary(ctx context.Context) (*models.Summary, []*models.MonthSummary, error) {
-	// Get all transactions from the repository
-	transactions, err := tc.repo.ListTransactions(ctx)
+	// Get the account ID from the controller
+	accountID := tc.accountID
+
+	// Get all transactions for the account from the repository
+	transactions, err := tc.repo.GetTransactionByAccountID(ctx, accountID)
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to list transactions: %v", err)
+		return nil, nil, fmt.Errorf("failed to get transactions for account %d: %v", accountID, err)
 	}
 
 	// Compute the summary statistics for all transactions
@@ -210,7 +225,7 @@ func (tc *TransactionController) GenerateEmailSummary(ctx context.Context) (*mod
 	}
 
 	// Save the month summaries to the repository
-	summaryID := summary.Id
+	summaryID := summary.SummaryID
 	for _, monthSummary := range monthSummaries {
 		if err := tc.repo.SaveMonthSummary(ctx, monthSummary, summaryID); err != nil {
 			return nil, nil, fmt.Errorf("failed to save month summary: %v", err)
