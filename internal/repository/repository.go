@@ -10,7 +10,7 @@ import (
 type Repository interface {
 
 	// AccountRepository methods
-	SaveAccount(ctx context.Context, a *models.Account) error
+	SaveAccount(ctx context.Context) (int, error)
 	GetAccountByID(ctx context.Context, id int) (*models.Account, error)
 
 	// TransactionRepository methods
@@ -39,8 +39,8 @@ func SetRepository(repository Repository) {
 }
 
 // SaveAccount saves the given account
-func SaveAccount(ctx context.Context, a *models.Account) error {
-	return implementation.SaveAccount(ctx, a)
+func SaveAccount(ctx context.Context) (int, error) {
+	return implementation.SaveAccount(ctx)
 }
 
 // GetAccountByID retrieves the account with the given ID
