@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+// This represents a transaction
 type Transaction struct {
 	TransactionID int
 	AccountID     int
