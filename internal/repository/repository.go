@@ -9,6 +9,10 @@ import (
 // Define the Repository interface
 type Repository interface {
 
+	// AccountRepository methods
+	SaveAccount(ctx context.Context, a *models.Account) error
+	GetAccountByID(ctx context.Context, id int) (*models.Account, error)
+
 	// TransactionRepository methods
 	SaveTransaction(ctx context.Context, trx *models.Transaction) error
 	GetTransactionByID(ctx context.Context, id int) (*models.Transaction, error)
@@ -17,6 +21,7 @@ type Repository interface {
 	// SummaryRepository methods
 	SaveSummary(ctx context.Context, s *models.Summary) error
 	GetSummaryByID(ctx context.Context, id int) (*models.Summary, error)
+	ListSummaries(ctx context.Context) ([]*models.Summary, error)
 
 	// MonthSummaryRepository methods
 	SaveMonthSummary(ctx context.Context, ms *models.MonthSummary, summaryID int) error
@@ -33,6 +38,16 @@ var implementation Repository
 // SetRepository sets the global repository implementation
 func SetRepository(repository Repository) {
 	implementation = repository
+}
+
+// SaveAccount saves the given account
+func SaveAccount(ctx context.Context, a *models.Account) error {
+	return implementation.SaveAccount(ctx, a)
+}
+
+// GetAccountByID retrieves the account with the given ID
+func GetAccountByID(ctx context.Context, id int) (*models.Account, error) {
+	return implementation.GetAccountByID(ctx, id)
 }
 
 // SaveTransaction saves the given transaction
