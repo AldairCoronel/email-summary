@@ -24,180 +24,262 @@ func NewPostgresRepository(connStr string) (*PostgresRepository, error) {
 	return &PostgresRepository{db: db}, nil
 }
 
+// Implement the SaveAccount method of the Repository interface
+func (pr *PostgresRepository) SaveAccount(ctx context.Context, a *models.Account) error {
+	query := `INSERT INTO accounts DEFAULT VALUES RETURNING account_id`
+	err := pr.db.QueryRowContext(ctx, query).Scan(&a.AccountID)
+	if err != nil {
+		return fmt.Errorf("failed to save account: %v", err)
+	}
+	return nil
+}
+
+// GetAccountByID retrieves the account with the given ID
+func (pr *PostgresRepository) GetAccountByID(ctx context.Context, id int) (*models.Account, error) {
+	query := `SELECT account_id FROM accounts WHERE account_id = $1`
+
+	var accountID int
+	err := pr.db.QueryRowContext(ctx, query, id).Scan(&accountID)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("acccount with id %d not found", id)
+		}
+		return nil, fmt.Errorf("error getting account from database: %v", err)
+	}
+
+	return &models.Account{
+		AccountID: accountID,
+	}, nil
+}
+
 // Implement the SaveTransaction method of the Repository interface
 func (pr *PostgresRepository) SaveTransaction(ctx context.Context, trx *models.Transaction) error {
-	query := `INSERT INTO transactions (id, date, amount, is_credit) VALUES ($1, $2, $3, $4)`
-	_, err := pr.db.ExecContext(ctx, query, trx.Id, trx.Date, trx.Amount, trx.IsCredit)
+	query := `INSERT INTO transactions (account_id, id, date, amount, is_credit) VALUES ($1, $2, $3, $4, $5)`
+	_, err := pr.db.ExecContext(ctx, query, trx.AccountID, trx.ID, trx.Date, trx.Amount, trx.IsCredit)
 	if err != nil {
 		return fmt.Errorf("failed to save transaction: %v", err)
 	}
 	return nil
 }
 
-// Implement the GetTransactionByID method of the Repository interface
-func (pr *PostgresRepository) GetTransactionByID(ctx context.Context, id int) (*models.Transaction, error) {
-	query := `SELECT id, date, amount, is_credit FROM transactions WHERE id=$1`
-	row := pr.db.QueryRowContext(ctx, query, id)
-
-	trx := &models.Transaction{}
-	err := row.Scan(&trx.Id, &trx.Date, &trx.Amount, &trx.IsCredit)
+// Implement the GetTransactionByAccountID method of the Repository interface
+func (pr *PostgresRepository) GetTransactionByAccountID(ctx context.Context, accountID int) ([]*models.Transaction, error) {
+	query := `SELECT transaction_id, account_id, id, date, amount, is_credit FROM transactions WHERE account_id=$1`
+	rows, err := pr.db.QueryContext(ctx, query, accountID)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("transaction with id %d not found", id)
-		}
-		return nil, fmt.Errorf("failed to get transaction: %v", err)
-	}
-
-	return trx, nil
-}
-
-// Implement the ListTransactions method of the Repository interface
-func (pr *PostgresRepository) ListTransactions(ctx context.Context) ([]*models.Transaction, error) {
-	rows, err := pr.db.QueryContext(ctx, "SELECT id, date, amount, is_credit FROM transactions")
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get transactions: %v", err)
 	}
 	defer rows.Close()
 
 	var transactions []*models.Transaction
 	for rows.Next() {
-		trx := new(models.Transaction)
-		err := rows.Scan(&trx.Id, &trx.Date, &trx.Amount, &trx.IsCredit)
-		if err != nil {
-			return nil, err
+		var transaction models.Transaction
+		if err := rows.Scan(&transaction.TransactionID, &transaction.AccountID, &transaction.ID, &transaction.Date, &transaction.Amount, &transaction.IsCredit); err != nil {
+			return nil, fmt.Errorf("failed to scan transaction row: %v", err)
+		}
+		transactions = append(transactions, &transaction)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to read transaction rows: %v", err)
+	}
+	return transactions, nil
+}
+
+// Implement the ListTransactions method of the Repository interface
+func (pr *PostgresRepository) ListTransactions(ctx context.Context) ([]*models.Transaction, error) {
+	query := `SELECT transaction_id, account_id, id, date, amount, is_credit FROM transactions ORDER BY date DESC`
+	rows, err := pr.db.QueryContext(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get transactions: %v", err)
+	}
+	defer rows.Close()
+
+	transactions := []*models.Transaction{}
+	for rows.Next() {
+		trx := &models.Transaction{}
+		if err := rows.Scan(&trx.TransactionID, &trx.AccountID, &trx.ID, &trx.Date, &trx.Amount, &trx.IsCredit); err != nil {
+			return nil, fmt.Errorf("failed to scan transaction: %v", err)
 		}
 		transactions = append(transactions, trx)
 	}
-	if err = rows.Err(); err != nil {
-		return nil, err
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to iterate transactions: %v", err)
 	}
+
 	return transactions, nil
 }
 
 // Implement the SaveSummary method of the Repository interface
 func (pr *PostgresRepository) SaveSummary(ctx context.Context, s *models.Summary) error {
-	query := `INSERT INTO summary (total_balance, num_of_credit_tansactions, num_of_debit_tansactions, total_average_credit, total_average_debit)
-		VALUES ($1, $2, $3, $4, $5) RETURNING id`
-	err := pr.db.QueryRowContext(ctx, query, s.TotalBalance, s.NumOfCreditTansactions, s.NumOfDebitTansactions, s.TotalAverageCredit, s.TotalAverageDebit).Scan(&s.Id)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// Implement the GetSummaryByID method of the Repository interface
-func (pr *PostgresRepository) GetSummaryByID(ctx context.Context, id int) (*models.Summary, error) {
-	s := new(models.Summary)
-	query := "SELECT id, total_balance, num_of_credit_tansactions, num_of_debit_tansactions, total_average_credit, total_average_debit FROM summary WHERE id=$1"
-	err := pr.db.QueryRowContext(ctx, query, id).Scan(&s.Id, &s.TotalBalance, &s.NumOfCreditTansactions, &s.NumOfDebitTansactions, &s.TotalAverageCredit, &s.TotalAverageDebit)
-	if err != nil {
-		return nil, err
-	}
-	return s, nil
-}
-
-// Implement the SaveMonthSummary method of the Repository interface
-func (pr *PostgresRepository) SaveMonthSummary(ctx context.Context, ms *models.MonthSummary, summaryID int) error {
-	sqlStatement := `
-		INSERT INTO month_summary (month, num_of_credit_tansactions, num_of_debit_tansactions, average_credit, average_debit, summary_id)
-		VALUES ($1, $2, $3, $4, $5, $6)
-		RETURNING id`
-	id := 0
-	err := pr.db.QueryRowContext(ctx, sqlStatement,
-		ms.Month,
-		ms.NumOfCreditTansactions,
-		ms.NumOfDebitTansactions,
-		ms.AverageCredit,
-		ms.AverageDebit,
-		summaryID,
-	).Scan(&id)
-	if err != nil {
-		return fmt.Errorf("failed to save month summary: %v", err)
-	}
-
-	ms.Id = id
-	return nil
-}
-
-// Implement the GetMonthSummaryByID method of the Repository interface
-func (pr *PostgresRepository) GetMonthSummaryByID(ctx context.Context, id int) (*models.MonthSummary, error) {
-	sqlStatement := `SELECT id, month, num_of_credit_tansactions, num_of_debit_tansactions, average_credit, average_debit, summary_id FROM month_summary WHERE id=$1`
-	row := pr.db.QueryRowContext(ctx, sqlStatement, id)
-
-	ms := &models.MonthSummary{}
-	err := row.Scan(
-		&ms.Id,
-		&ms.Month,
-		&ms.NumOfCreditTansactions,
-		&ms.NumOfDebitTansactions,
-		&ms.AverageCredit,
-		&ms.AverageDebit,
-		&ms.SummaryId,
+	query := `
+		INSERT INTO summary (
+			account_id,
+			total_balance, 
+			total_transactions, 
+			num_of_credit_transactions, 
+			num_of_debit_transactions, 
+			total_average_credit, 
+			total_average_debit
+		) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		RETURNING summary_id
+	`
+	row := pr.db.QueryRowContext(
+		ctx,
+		query,
+		s.AccountID,
+		s.TotalBalance,
+		s.TotalTransactions,
+		s.NumOfCreditTransactions,
+		s.NumOfDebitTransactions,
+		s.TotalAverageCredit,
+		s.TotalAverageDebit,
 	)
+	if err := row.Scan(&s.SummaryID); err != nil {
+		return fmt.Errorf("failed to save summary: %v", err)
+	}
+	return nil
+}
+
+// Implement the GetSummaryByAccountID method of the Repository interface
+func (pr *PostgresRepository) GetSummaryByAccountID(ctx context.Context, accountID int) (*models.Summary, error) {
+	query := `
+		SELECT summary_id, total_balance, total_transactions, num_of_credit_transactions, num_of_debit_transactions, total_average_credit, total_average_debit
+		FROM summary
+		WHERE account_id = $1
+	`
+	row := pr.db.QueryRowContext(ctx, query, accountID)
+
+	summary := &models.Summary{}
+	err := row.Scan(&summary.SummaryID, &summary.TotalBalance, &summary.TotalTransactions, &summary.NumOfCreditTransactions, &summary.NumOfDebitTransactions, &summary.TotalAverageCredit, &summary.TotalAverageDebit)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("month summary not found")
+			return nil, fmt.Errorf("failed to get summary by id: %v", err)
 		}
-		return nil, fmt.Errorf("failed to get month summary: %v", err)
+		return nil, fmt.Errorf("failed to get summary by account ID: %v", err)
 	}
 
-	return ms, nil
+	return summary, nil
 }
 
-// Implement the GetMonthSummaryBySummaryID method of the Repository interface
-func (pr *PostgresRepository) GetMonthSummaryBySummaryID(ctx context.Context, summaryId int) ([]*models.MonthSummary, error) {
-	sqlStatement := `SELECT id, month, num_of_credit_tansactions, num_of_debit_tansactions, average_credit, average_debit, summary_id FROM month_summary WHERE summary_id=$1`
-	rows, err := pr.db.QueryContext(ctx, sqlStatement, summaryId)
+// ListSummaries returns a list of all summaries for all accounts.
+func (pr *PostgresRepository) ListSummaries(ctx context.Context) ([]*models.Summary, error) {
+	query := `
+		SELECT summary_id, account_id, total_balance, total_transactions, num_of_credit_transactions, num_of_debit_transactions, total_average_credit, total_average_debit 
+		FROM summary
+	`
+	rows, err := pr.db.QueryContext(ctx, query)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get month summaries: %v", err)
+		return nil, fmt.Errorf("failed to list summaries: %v", err)
 	}
 	defer rows.Close()
 
-	var monthSummaries []*models.MonthSummary
+	summaries := make([]*models.Summary, 0)
 	for rows.Next() {
-		ms := &models.MonthSummary{}
-		err := rows.Scan(
-			&ms.Id,
-			&ms.Month,
-			&ms.NumOfCreditTansactions,
-			&ms.NumOfDebitTansactions,
-			&ms.AverageCredit,
-			&ms.AverageDebit,
-			&ms.SummaryId,
+		var summary models.Summary
+		err = rows.Scan(
+			&summary.SummaryID,
+			&summary.AccountID,
+			&summary.TotalBalance,
+			&summary.TotalTransactions,
+			&summary.NumOfCreditTransactions,
+			&summary.NumOfDebitTransactions,
+			&summary.TotalAverageCredit,
+			&summary.TotalAverageDebit,
 		)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get month summaries: %v", err)
-		}
-
-		monthSummaries = append(monthSummaries, ms)
-	}
-
-	return monthSummaries, nil
-}
-
-// Implement the ListMonthSummaries method of the Repository interface
-func (pr *PostgresRepository) ListMonthSummaries(ctx context.Context) ([]*models.MonthSummary, error) {
-	rows, err := pr.db.QueryContext(ctx, "SELECT id, month, num_of_credit_transactions, num_of_debit_transactions, average_credit, average_debit, summary_id FROM month_summaries")
-	if err != nil {
-		return nil, fmt.Errorf("failed to list month summaries: %v", err)
-	}
-	defer rows.Close()
-
-	var summaries []*models.MonthSummary
-	for rows.Next() {
-		var summary models.MonthSummary
-		err = rows.Scan(&summary.Id, &summary.Month, &summary.NumOfCreditTansactions, &summary.NumOfDebitTansactions, &summary.AverageCredit, &summary.AverageDebit, &summary.SummaryId)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan month summary: %v", err)
+			return nil, fmt.Errorf("failed to scan summary row: %v", err)
 		}
 		summaries = append(summaries, &summary)
 	}
 
 	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("failed to list month summaries: %v", err)
+		return nil, fmt.Errorf("failed to list summaries: %v", err)
 	}
 
 	return summaries, nil
+}
+
+// Implement the SaveMonthSummary method of the Repository interface
+func (pr *PostgresRepository) SaveMonthSummary(ctx context.Context, ms *models.MonthSummary, summaryID int) error {
+	query := `
+		INSERT INTO month_summary (
+			month, 
+			total_balance, 
+			total_transactions, 
+			num_of_credit_transactions, 
+			num_of_debit_transactions, 
+			average_credit, 
+			average_debit, 
+			summary_id
+		) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`
+	_, err := pr.db.ExecContext(
+		ctx,
+		query,
+		ms.Month,
+		ms.TotalBalance,
+		ms.TotalTransactions,
+		ms.NumOfCreditTransactions,
+		ms.NumOfDebitTransactions,
+		ms.AverageCredit,
+		ms.AverageDebit,
+		summaryID,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to save month summary: %v", err)
+	}
+	return nil
+}
+
+// GetMonthSummaryBySummaryID returns a month summary by summary id
+func (pr *PostgresRepository) GetMonthSummaryBySummaryID(ctx context.Context, summaryID int64) ([]*models.MonthSummary, error) {
+	query := `
+		SELECT 
+			month_summary_id, 
+			month, 
+			total_balance, 
+			total_transactions, 
+			num_of_credit_transactions, 
+			num_of_debit_transactions, 
+			average_credit, 
+			average_debit,
+			summary_id
+		FROM month_summary
+		WHERE summary_id = $1
+	`
+	rows, err := pr.db.QueryContext(ctx, query, summaryID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get month summary by summary id: %v", err)
+	}
+	defer rows.Close()
+
+	var monthSummaries []*models.MonthSummary
+	for rows.Next() {
+		ms := new(models.MonthSummary)
+		err := rows.Scan(
+			&ms.MonthSummaryID,
+			&ms.Month,
+			&ms.TotalBalance,
+			&ms.TotalTransactions,
+			&ms.NumOfCreditTransactions,
+			&ms.NumOfDebitTransactions,
+			&ms.AverageCredit,
+			&ms.AverageDebit,
+			&ms.SummaryID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan month summary: %v", err)
+		}
+		monthSummaries = append(monthSummaries, ms)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("failed to get month summary by summary id: %v", err)
+	}
+
+	return monthSummaries, nil
 }
 
 // This function closes the database connection by calling the Close() function on the database object.

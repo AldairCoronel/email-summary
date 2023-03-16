@@ -26,7 +26,6 @@ type Repository interface {
 	// MonthSummaryRepository methods
 	SaveMonthSummary(ctx context.Context, ms *models.MonthSummary, summaryID int) error
 	GetMonthSummaryBySummaryID(ctx context.Context, summaryID int) ([]*models.MonthSummary, error)
-	ListMonthSummaries(ctx context.Context) ([]*models.MonthSummary, error)
 
 	Close() error
 }
@@ -82,11 +81,6 @@ func SaveMonthSummary(ctx context.Context, ms *models.MonthSummary, summaryID in
 // GetMonthSummaryBySummaryID retrieves a list of month summaries for the given summary ID
 func GetMonthSummaryBySummaryID(ctx context.Context, summaryID int) ([]*models.MonthSummary, error) {
 	return implementation.GetMonthSummaryBySummaryID(ctx, summaryID)
-}
-
-// Implement the ListMonthSummaries method of the Repository interface
-func ListMonthSummaries(ctx context.Context) ([]*models.MonthSummary, error) {
-	return implementation.ListMonthSummaries(ctx)
 }
 
 // Implement the Close method of the Repository interface
