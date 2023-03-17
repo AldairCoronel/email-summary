@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"path/filepath"
@@ -69,12 +70,16 @@ func main() {
 	// Initialize email service with SMTP configuration
 	emailService := view.NewSMTPService(emailCfg)
 
-	// Send email summary
-	emailTo := os.Getenv("EMAIL_TO")
-	if emailTo == "" {
-		log.Fatal("EMAIL_TO environment variable is not set")
+	// Get EMAIL_TO flag value
+	emailTo := flag.String("emailTo", "", "The email address to send the summary to")
+
+	// Parse flags
+	flag.Parse()
+
+	to := []string{*emailTo}
+	if *emailTo == "" {
+		log.Fatal("The -emailTo flag is required")
 	}
-	to := []string{emailTo}
 	subject := "Transaction Summary"
 	body, err := view.RenderEmailBody(summary, monthSummaries)
 	if err != nil {
