@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"html/template"
 	"net/smtp"
+	"sort"
 	"strings"
+	"time"
 
 	"github.com/aldaircoronel/email-summary/internal/models"
 )
@@ -43,7 +45,17 @@ func NewSMTPService(cfg *SMTPConfig) *SMTPService {
 	}
 }
 
+func sortByMonth(monthSummaries []*models.MonthSummary) {
+	sort.Slice(monthSummaries, func(i, j int) bool {
+		m1, _ := time.Parse("January", monthSummaries[i].Month)
+		m2, _ := time.Parse("January", monthSummaries[j].Month)
+		return m1.Before(m2)
+	})
+}
+
 func RenderEmailBody(summary *models.Summary, monthSummaries []*models.MonthSummary) (string, error) {
+	sortByMonth(monthSummaries)
+
 	tmpl, err := template.ParseFiles("internal/view/email-template.html")
 	if err != nil {
 		return "", fmt.Errorf("failed to parse email template: %v", err)
