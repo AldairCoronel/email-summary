@@ -65,7 +65,7 @@ exit
 10. Now you can execute main.go passing a flag with your email in this path ``root@id:/app#``:
 
 ```
-go run cmd/main.go -- emailTo <your.email@example.com>
+go run cmd/main.go --emailTo <your.email@example.com>
 ```
 
 This should give you
