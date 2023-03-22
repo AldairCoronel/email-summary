@@ -8,13 +8,13 @@ To run this project, you will need to have Docker installed. Follow the instruct
 1. First, pull the Docker image from Docker Hub:
 
 ```
-docker pull aldacacr/stori-challenge:1.0.0
+docker pull aldacacr/stori-challenge:1.0.1
 ```
 
 2. Run the Docker container:
 
 ```
-docker run -it aldacacr/stori-challenge:1.0.0
+docker run -it aldacacr/stori-challenge:1.0.1
 ```
 
 
@@ -65,8 +65,9 @@ exit
 10. Now you can execute main.go passing a flag with your email in this path ``root@id:/app#``:
 
 ```
-go run cmd/main.go --emailTo <your.email@example.com>
+go run cmd/main.go --csv="./sample/txns.csv" --emailTo="<your.email@example.com>"
 ```
+
 
 This should give you
 
