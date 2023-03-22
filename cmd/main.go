@@ -14,9 +14,19 @@ import (
 	"github.com/joho/godotenv"
 )
 
+var (
+	emailTo     string
+	csvFilePath string
+)
+
 func main() {
-	// Get the file path of the input csv files.
-	csvFilePath, _ := filepath.Abs("./sample/txns.csv")
+	// Get EMAIL_TO flag value
+	flag.StringVar(&emailTo, "emailTo", "aldair.coronel.ruiz@gmail.com", "The email address to send the summary")
+	flag.StringVar(&csvFilePath, "csv", "./sample/txns.csv", "path to CSV file")
+	// Parse flags
+	flag.Parse()
+
+	csvFilePath, _ := filepath.Abs(csvFilePath)
 
 	err := godotenv.Load()
 	if err != nil {
@@ -70,14 +80,8 @@ func main() {
 	// Initialize email service with SMTP configuration
 	emailService := view.NewSMTPService(emailCfg)
 
-	// Get EMAIL_TO flag value
-	emailTo := flag.String("emailTo", "", "The email address to send the summary to")
-
-	// Parse flags
-	flag.Parse()
-
-	to := []string{*emailTo}
-	if *emailTo == "" {
+	to := []string{emailTo}
+	if emailTo == "" {
 		log.Fatal("The -emailTo flag is required")
 	}
 	subject := "Transaction Summary"
