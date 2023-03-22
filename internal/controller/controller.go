@@ -116,7 +116,7 @@ func (c *TransactionController) ProcessCSVFile(ctx context.Context, filePath str
 /*
 This function takes a slice of *models.Transaction and returns a pointer to models.Summary and an error. It computes summary statistics for all transactions in the slice, including total balance, total transactions, number of credit and debit transactions, and average credit and debit amounts. If successful, it returns a pointer to the computed models.Summary and a nil error. If there was an error, it returns a nil pointer and an error.
 */
-func computeSummary(transactions []*models.Transaction) (*models.Summary, error) {
+func ComputeSummary(transactions []*models.Transaction) (*models.Summary, error) {
 	var totalBalance, totalCredit, totalDebit float64
 	var totalTransactions, numCreditTransactions, numDebitTransactions int
 
@@ -159,7 +159,7 @@ func computeSummary(transactions []*models.Transaction) (*models.Summary, error)
 /*
 This function takes a slice of *models.Transaction and returns a slice of *models.MonthSummary and an error. It computes summary statistics for each month in the transactions, including total balance, total transactions, number of credit and debit transactions, and average credit and debit amounts. If successful, it returns a slice of pointers to the computed models.MonthSummary structs and a nil error. If there was an error, it returns a nil slice and an error.
 */
-func computeMonthSummaries(transactions []*models.Transaction) ([]*models.MonthSummary, error) {
+func ComputeMonthSummaries(transactions []*models.Transaction) ([]*models.MonthSummary, error) {
 	// Create a map to hold the month summaries
 	monthSummaries := make(map[string]*models.MonthSummary)
 
@@ -221,7 +221,7 @@ func (tc *TransactionController) GenerateEmailSummary(ctx context.Context) (*mod
 	}
 
 	// Compute the summary statistics for all transactions
-	summary, err := computeSummary(transactions)
+	summary, err := ComputeSummary(transactions)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to compute summary: %v", err)
 	}
@@ -232,7 +232,7 @@ func (tc *TransactionController) GenerateEmailSummary(ctx context.Context) (*mod
 	}
 
 	// Compute the month summary statistics for each month
-	monthSummaries, err := computeMonthSummaries(transactions)
+	monthSummaries, err := ComputeMonthSummaries(transactions)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to compute month summaries: %v", err)
 	}
